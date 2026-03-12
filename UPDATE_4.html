@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-DFC Health System - 2026 Zambia Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Base Futuristic Theme */
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%); 
+            color: #e0e0e0;
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        #bg-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+            transition: background 1.2s ease-in-out; background-size: cover; background-position: center;
+            /* Initial Home: Lusaka Skyline/Modern Africa */
+            background-image: url("https://images.unsplash.com/photo-1573163231162-717df3f80ce4?q=80&w=1920");
+        }
+
+        #bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: rgba(10, 10, 25, 0.82);
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(0, 0, 0, 0.9); padding: 15px; display: flex; justify-content: center;
+            gap: 15px; border-bottom: 2px solid #00d4ff; position: sticky; top: 0; z-index: 100;
+        }
+
+        nav button {
+            background: transparent; color: #00d4ff; border: 1px solid #00d4ff;
+            padding: 8px 15px; cursor: pointer; text-transform: uppercase; transition: 0.3s;
+            font-weight: bold; display: flex; align-items: center; gap: 8px;
+        }
+
+        nav button:hover { background: #00d4ff; color: #000; box-shadow: 0 0 10px #00d4ff; }
+
+        /* Page & Container Styling */
+        .container { max-width: 1200px; margin: auto; }
+
+        .page {
+            display: none; padding: 30px; height: calc(100vh - 120px); overflow-y: auto;
+            max-width: 1200px; margin: 20px auto; border-radius: 15px;
+            backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .active-page { display: block; animation: fadeIn 0.8s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { 
+            text-align: center; text-transform: uppercase; letter-spacing: 4px;
+            color: #00d4ff; text-shadow: 0 0 15px rgba(0, 212, 255, 0.5); margin-bottom: 20px;
+        }
+
+        h2 { 
+            color: #7000ff; border-left: 4px solid #00d4ff; padding-left: 15px;
+            font-size: 1.2rem; text-transform: uppercase; margin-bottom: 20px;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .module { 
+            background: rgba(10, 10, 25, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); 
+            padding: 25px; border-radius: 12px; 
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(112, 0, 255, 0.3);
+            height: 300px;
+        }
+
+        /* Form Elements */
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #aaa; }
+        input, select, textarea { 
+            width: 100%; padding: 12px; margin-top: 8px; background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; box-sizing: border-box;
+        }
+
+        button.action-btn { 
+            background: linear-gradient(135deg, #007bff, #00d4ff); color: white; 
+            padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; 
+            font-weight: bold; text-transform: uppercase; transition: 0.3s; margin-top: 15px;
+        }
+        
+        button.action-btn:hover { filter: brightness(1.2); }
+        button.red { background: linear-gradient(135deg, #dc3545, #ff2e63); }
+        button.orange { background: linear-gradient(135deg, #ffc107, #f3c623); color: black; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(0, 0, 0, 0.3); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        th { color: #00d4ff; text-transform: uppercase; font-size: 0.75rem; background: rgba(0, 212, 255, 0.1); }
+
+        #ussd-output { 
+            font-family: 'Courier New', monospace; background: #000; color: #0f0; 
+            padding: 20px; border-radius: 8px; border: 1px solid #0f0; min-height: 50px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="bg-container"></div>
+    <div id="bg-overlay"></div>
+
+    <nav>
+        <button onclick="showPage('home')">📊 Admin Console</button>
+        <button onclick="showPage('pharmacy')">💊 Pharmacy & Sales</button>
+        <button onclick="showPage('logistics')">🚕 Logistics Hub</button>
+        <button onclick="showPage('referral')">📋 Medical Referrals</button>
+        <button onclick="showPage('ussd-page')">📱 USSD Portal</button>
+    </nav>
+
+    <div class="container">
+        <h1>💊 AI-DFC Health System - V2026</h1>
+
+        <div id="home" class="page active-page">
+            <div class="dashboard-grid">
+                <div class="module">
+                    <h2>📈 Revenue Analytics</h2>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="module">
+                    <h2>📦 Inventory Value</h2>
+                    <div class="chart-container">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module" style="margin-top: 20px;">
+                <h2>📅 Monthly Archive Management</h2>
+                <div style="display:flex; gap: 10px;">
+                    <button onclick="saveMonthlyReport()" class="action-btn orange">Archive Current Month</button>
+                    <button onclick="clearCurrentMonthData()" class="action-btn red">Reset Database</button>
+                </div>
+                <div id="monthly-archive"></div>
+            </div>
+        </div>
+
+        <div id="ussd-page" class="page">
+            <div class="module">
+                <h2>📱 USSD Portal (*567#)</h2>
+                <p>Offline Connectivity Simulator for Local Communities (Zamtel/Airtel/MTN)</p>
+                <input type="text" id="ussd-input" placeholder="Enter selection...">
+                <button onclick="simulateUSSD()" class="action-btn">Submit</button>
+                <p id="ussd-output">Awaiting Signal...</p>
+            </div>
+        </div>
+
+        <div id="pharmacy" class="page">
+            <div class="module">
+                <h2>📦 Stock Intake</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <input type="text" id="med-name" placeholder="Medicine Name">
+                    <input type="number" id="med-quantity" placeholder="Qty">
+                    <input type="number" id="med-unit-price" placeholder="Price (ZMW)">
+                </div>
+                <button onclick="addUpdateStock()" class="action-btn">Add to Stock</button>
+                <div id="stock-list"></div>
+            </div>
+
+            <div class="module">
+                <h2>💰 Sale Terminal</h2>
+                <div style="display:flex; gap:15px; align-items: flex-end;">
+                    <input type="text" id="sale-med-name" placeholder="Item Name" list="stock-options">
+                    <datalist id="stock-options"></datalist>
+                    <input type="number" id="sale-quantity" value="1">
+                    <button onclick="recordSale()" class="action-btn">Finalize Sale</button>
+                </div>
+                <div id="sales-records"></div>
+            </div>
+        </div>
+
+        <div id="logistics" class="page">
+            <div class="module">
+                <h2>🚕 Yango Dispatch Console</h2>
+                <div id="yango-drivers-list"></div>
+                <button onclick="dispatchEmergency()" class="action-btn red">Dispatch Nearest Driver (Emergency)</button>
+                <div id="active-dispatches" style="margin-top: 20px;"></div>
+            </div>
+
+            <div class="module" style="border-color: #08ffc8;">
+                <h2>📱 Driver Interface (App Simulator)</h2>
+                <div style="display:flex; gap: 10px;">
+                    <input type="text" id="driver-name-register" placeholder="Driver Name">
+                    <select id="driver-location-register">
+                        <option value="Kabulonga">Kabulonga</option>
+                        <option value="Town Center">Town Center</option>
+                        <option value="Manda Hill">Manda Hill</option>
+                        <option value="Woodlands">Woodlands</option>
+                        <option value="Chelstone">Chelstone</option>
+                    </select>
+                </div>
+                <button onclick="registerUpdateDriver()" class="action-btn">Sign In / Update Location</button>
+                <h4 id="driver-app-header" style="color:#08ffc8; margin-top:20px;">Offline</h4>
+                <div id="driver-notification" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px;"></div>
+                <button onclick="goActive()" class="action-btn" style="background: #08ffc8; color: #000;">Switch to Active</button>
+            </div>
+        </div>
+
+        <div id="referral" class="page">
+            <div class="module">
+                <h2>📋 Outbound Referral Broadcast</h2>
+                <input type="text" id="ref-patient" placeholder="Patient Name">
+                <textarea id="ref-reason" placeholder="Medical Reason (e.g., Trauma, Advanced Surgery)"></textarea>
+                <select id="ref-destination">
+                    <option value="UTH Lusaka">UTH Lusaka (Public)</option>
+                    <option value="Maina Soko">Maina Soko (Military)</option>
+                    <option value="Levy Mwanawasa">Levy Mwanawasa (General)</option>
+                    <option value="CFB Medical">CFB Medical (Private)</option>
+                </select>
+                <label><input type="checkbox" id="ref-emergency" style="width:auto"> High Priority (Emergency)</label>
+                <button onclick="submitReferral()" class="action-btn">Send to Facilities</button>
+                <div id="ref-log"></div>
+            </div>
+
+            <div class="module" style="border-color: #ff2e63;">
+                <h2>🚨 Receiver Management (Hospital Side)</h2>
+                <select id="referral-to-respond" onchange="showReferralDetail()"><option value="">-- No Requests --</option></select>
+                <div id="selected-referral-details" style="margin: 15px 0; font-size: 0.9rem; color: #ff2e63;"></div>
+                <button onclick="sendReferralResponse('ACCEPTED')" class="action-btn">Accept Patient</button>
+                <button onclick="sendReferralResponse('DENIED')" class="action-btn red">Decline (Full)</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- Data Persistence ---
+    const ZMW = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZMW' });
+    let stock = JSON.parse(localStorage.getItem('healthShopStock')) || {};
+    let sales = JSON.parse(localStorage.getItem('healthShopSales')) || [];
+    let referrals = JSON.parse(localStorage.getItem('healthShopReferrals')) || [];
+    let yangoDrivers = JSON.parse(localStorage.getItem('yangoDrivers')) || [];
+    let dispatchQueue = JSON.parse(localStorage.getItem('dispatchQueue')) || [];
+    let monthlyRecords = JSON.parse(localStorage.getItem('monthlyRecords')) || [];
+    let currentAppDriver = localStorage.getItem('currentAppDriver') || '';
+    let ussdState = 0;
+
+    // --- Charts ---
+    let revenueChart, inventoryChart;
+
+    function initCharts() {
+        const revCtx = document.getElementById('revenueChart').getContext('2d');
+        const invCtx = document.getElementById('inventoryChart').getContext('2d');
+
+        revenueChart = new Chart(revCtx, {
+            type: 'line',
+            data: {
+                labels: monthlyRecords.slice(0, 6).reverse().map(r => r.date),
+                datasets: [{
+                    label: 'Revenue (ZMW)',
+                    data: monthlyRecords.slice(0, 6).reverse().map(r => r.revenue),
+                    borderColor: '#00d4ff',
+                    backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
+        });
+
+        inventoryChart = new Chart(invCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(stock).slice(0, 5),
+                datasets: [{
+                    label: 'Quantity',
+                    data: Object.values(stock).slice(0, 5).map(s => s.quantity),
+                    backgroundColor: '#7000ff'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
+        });
+    }
+
+    function updateCharts() {
+        if (revenueChart) {
+            revenueChart.data.labels = monthlyRecords.slice(0, 6).reverse().map(r => r.date);
+            revenueChart.data.datasets[0].data = monthlyRecords.slice(0, 6).reverse().map(r => r.revenue);
+            revenueChart.update();
+        }
+        if (inventoryChart) {
+            inventoryChart.data.labels = Object.keys(stock).slice(0, 5);
+            inventoryChart.data.datasets[0].data = Object.values(stock).slice(0, 5).map(s => s.quantity);
+            inventoryChart.update();
+        }
+    }
+
+    // --- System Logic ---
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+        document.getElementById(pageId).classList.add('active-page');
+        
+        // ZAMBIAN LOCALIZED IMAGES
+        const urls = {
+            'home': 'https://images.unsplash.com/photo-1573163231162-717df3f80ce4', // Urban Africa Tech/Modern
+            'pharmacy': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae', // Medical Supplies
+            'logistics': 'https://images.unsplash.com/photo-1512403710292-0745509cc92a', // African Roads/Urban Traffic
+            'referral': 'https://images.unsplash.com/photo-1516549655169-df83a0774514', // Hospital Staff/Setting
+            'ussd-page': 'https://images.unsplash.com/photo-1523240693567-479cc2aa46d7' // Community & Mobile Tech use
+        };
+        document.getElementById('bg-container').style.backgroundImage = `url("${urls[pageId]}?q=80&w=1920")`;
+    }
+
+    function saveAndRefresh(type) {
+        if (type === 'stock') { 
+            localStorage.setItem('healthShopStock', JSON.stringify(stock)); 
+            renderStock(); 
+            const dl = document.getElementById('stock-options');
+            dl.innerHTML = Object.keys(stock).map(k => `<option value="${k}">`).join('');
+        }
+        if (type === 'sales') { localStorage.setItem('healthShopSales', JSON.stringify(sales)); renderSales(); }
+        if (type === 'yango') { 
+            localStorage.setItem('yangoDrivers', JSON.stringify(yangoDrivers)); 
+            localStorage.setItem('dispatchQueue', JSON.stringify(dispatchQueue));
+            renderYangoDrivers(); renderActiveDispatches(); updateDriverAppUI(); 
+        }
+        if (type === 'referrals') { 
+            localStorage.setItem('healthShopReferrals', JSON.stringify(referrals)); 
+            renderReferrals(); populateReferralDropdown(); 
+        }
+        if (type === 'monthly') { localStorage.setItem('monthlyRecords', JSON.stringify(monthlyRecords)); renderMonthlyArchive(); }
+        updateCharts();
+    }
+
+    // Pharmacy
+    function addUpdateStock() {
+        const name = document.getElementById('med-name').value;
+        const qty = parseInt(document.getElementById('med-quantity').value);
+        const price = parseFloat(document.getElementById('med-unit-price').value);
+        if (name && qty) {
+            stock[name] = { quantity: (stock[name]?.quantity || 0) + qty, price: price || 100 };
+            saveAndRefresh('stock');
+            document.getElementById('med-name').value = "";
+            document.getElementById('med-quantity').value = "";
+        }
+    }
+
+    function recordSale() {
+        const name = document.getElementById('sale-med-name').value;
+        const qty = parseInt(document.getElementById('sale-quantity').value);
+        if (stock[name] && stock[name].quantity >= qty) {
+            stock[name].quantity -= qty;
+            sales.unshift({ item: name, qty, total: qty * stock[name].price, date: new Date().toLocaleDateString() });
+            saveAndRefresh('stock'); saveAndRefresh('sales');
+        } else { alert("Insufficient Stock!"); }
+    }
+
+    function renderStock() {
+        let h = '<table><tr><th>Item</th><th>Qty</th><th>Price</th></tr>';
+        for(let [n, d] of Object.entries(stock)) h += `<tr><td>${n}</td><td>${d.quantity}</td><td>${ZMW.format(d.price)}</td></tr>`;
+        document.getElementById('stock-list').innerHTML = h + '</table>';
+    }
+
+    function renderSales() {
+        let h = '<table><tr><th>Date</th><th>Item</th><th>Amount</th></tr>';
+        sales.slice(0, 5).forEach(s => h += `<tr><td>${s.date}</td><td>${s.item}</td><td>${ZMW.format(s.total)}</td></tr>`);
+        document.getElementById('sales-records').innerHTML = h + '</table>';
+    }
+
+    // Logistics
+    function registerUpdateDriver() {
+        const name = document.getElementById('driver-name-register').value;
+        const loc = document.getElementById('driver-location-register').value;
+        if (name) {
+            let d = yangoDrivers.find(x => x.name === name);
+            if (d) { d.location = loc; d.status = 'Active'; }
+            else { yangoDrivers.push({ name, location: loc, status: 'Active', trips: 0 }); }
+            currentAppDriver = name;
+            localStorage.setItem('currentAppDriver', name);
+            saveAndRefresh('yango');
+        }
+    }
+
+    function dispatchEmergency() {
+        const available = yangoDrivers.filter(d => d.status === 'Active');
+        if (available.length > 0) {
+            const driver = available[Math.floor(Math.random() * available.length)];
+            const dispId = Date.now();
+            dispatchQueue.push({ id: dispId, driverName: driver.name, status: 'Pending', time: new Date().toLocaleTimeString() });
+            driver.status = 'Dispatched';
+            saveAndRefresh('yango');
+        } else {
+            alert("No active drivers currently available in the Lusaka network.");
+        }
+    }
+
+    function goActive() {
+        const d = yangoDrivers.find(x => x.name === currentAppDriver);
+        if (d) { d.status = 'Active'; saveAndRefresh('yango'); }
+    }
+
+    function renderYangoDrivers() {
+        let h = '<table><tr><th>Driver</th><th>Loc</th><th>Status</th></tr>';
+        yangoDrivers.forEach(d => h += `<tr><td>${d.name}</td><td>${d.location}</td><td>${d.status}</td></tr>`);
+        document.getElementById('yango-drivers-list').innerHTML = h + '</table>';
+    }
+
+    function renderActiveDispatches() {
+        document.getElementById('active-dispatches').innerHTML = dispatchQueue.map(d => 
+            `<div style="color:#00d4ff; margin-bottom: 5px;">⚡ ${d.driverName} dispatched at ${d.time} [${d.status}]</div>`).join('');
+    }
+
+    function updateDriverAppUI() {
+        const div = document.getElementById('driver-notification');
+        const driver = yangoDrivers.find(d => d.name === currentAppDriver);
+        if (!driver) return;
+        document.getElementById('driver-app-header').innerText = `App Mode: ${driver.name} | ${driver.status}`;
+        const task = dispatchQueue.find(q => q.driverName === currentAppDriver);
+        if (task && task.status === 'Pending') {
+            div.innerHTML = `<p style="color:red">🚨 EMERGENCY TRIP REQUEST!</p>
+            <button onclick="acceptTrip(${task.id})" class="action-btn">Accept</button>`;
+        } else if (task && task.status === 'En Route') {
+            div.innerHTML = `<p>En route to medical facility...</p>
+            <button onclick="completeTrip(${task.id})" class="action-btn orange">Complete Trip</button>`;
+        } else {
+            div.innerHTML = "Awaiting assignments from HQ...";
+        }
+    }
+
+    function acceptTrip(id) {
+        const task = dispatchQueue.find(q => q.id === id);
+        if (task) task.status = 'En Route';
+        saveAndRefresh('yango');
+    }
+
+    function completeTrip(id) {
+        const driver = yangoDrivers.find(d => d.name === currentAppDriver);
+        if (driver) driver.status = 'Active';
+        dispatchQueue = dispatchQueue.filter(q => q.id !== id);
+        saveAndRefresh('yango');
+    }
+
+    // Referrals
+    function submitReferral() {
+        const patient = document.getElementById('ref-patient').value;
+        const reason = document.getElementById('ref-reason').value;
+        const dest = document.getElementById('ref-destination').value;
+        if (patient) {
+            referrals.unshift({ id: Date.now(), patient, reason, destination: dest, status: 'Pending' });
+            saveAndRefresh('referrals');
+            document.getElementById('ref-patient').value = "";
+            document.getElementById('ref-reason').value = "";
+        }
+    }
+
+    function renderReferrals() {
+        document.getElementById('ref-log').innerHTML = referrals.map(r => 
+            `<div style="font-size:0.8rem; margin-top:5px;">${r.patient} → ${r.destination} [${r.status}]</div>`).join('');
+    }
+
+    function populateReferralDropdown() {
+        const sel = document.getElementById('referral-to-respond');
+        if(!sel) return;
+        sel.innerHTML = '<option value="">-- Select Pending --</option>' + 
+            referrals.filter(r => r.status === 'Pending').map(r => `<option value="${r.id}">${r.patient}</option>`).join('');
+    }
+
+    function showReferralDetail() {
+        const id = document.getElementById('referral-to-respond').value;
+        const r = referrals.find(x => x.id == id);
+        document.getElementById('selected-referral-details').innerText = r ? `Reason: ${r.reason}` : "";
+    }
+
+    function sendReferralResponse(status) {
+        const id = document.getElementById('referral-to-respond').value;
+        const r = referrals.find(x => x.id == id);
+        if (r) { r.status = status; saveAndRefresh('referrals'); }
+    }
+
+    // Monthly Report
+    function saveMonthlyReport() {
+        const revenue = sales.reduce((a, b) => a + b.total, 0);
+        const date = new Date().toLocaleString('default', { month: 'short', year: 'numeric' });
+        monthlyRecords.unshift({ date, revenue });
+        saveAndRefresh('monthly');
+    }
+
+    function renderMonthlyArchive() {
+        let h = '<table><tr><th>Month</th><th>Total Revenue</th></tr>';
+        monthlyRecords.forEach(m => h += `<tr><td>${m.date}</td><td>${ZMW.format(m.revenue)}</td></tr>`);
+        document.getElementById('monthly-archive').innerHTML = h + '</table>';
+    }
+
+    function clearCurrentMonthData() {
+        if(confirm("Confirm Master Reset? This clears all local data.")) { 
+            localStorage.clear(); 
+            location.reload(); 
+        }
+    }
+
+    // USSD Simulator Logic
+    function simulateUSSD() {
+        const input = document.getElementById('ussd-input').value;
+        const out = document.getElementById('ussd-output');
+        if (ussdState === 0) {
+            out.innerText = "Welcome to DFC Health\n1. Emergency Yango\n2. Pharmacy Stock\n3. View Referrals";
+            ussdState = 1;
+        } else if (ussdState === 1) {
+            if (input === '1') { 
+                dispatchEmergency(); 
+                out.innerText = "Searching for nearest Yango driver in Lusaka..."; 
+                ussdState = 0; 
+            }
+            else if (input === '2') { 
+                out.innerText = "Available:\n" + Object.keys(stock).map(k => `${k} (${stock[k].quantity})`).join("\n") || "No stock listed."; 
+                ussdState = 0; 
+            }
+            else if (input === '3') {
+                out.innerText = referrals.slice(0,2).map(r => `${r.patient}: ${r.status}`).join("\n") || "No referrals.";
+                ussdState = 0;
+            }
+            else { out.innerText = "Invalid selection. Ending session."; ussdState = 0; }
+        }
+        document.getElementById('ussd-input').value = "";
+    }
+
+    window.onload = () => {
+        initCharts();
+        renderStock(); renderSales(); renderYangoDrivers(); 
+        renderReferrals(); populateReferralDropdown(); renderMonthlyArchive();
+        updateDriverAppUI();
+        
+        // Populate initial datalist
+        saveAndRefresh('stock');
+    };
+</script>
+</body>
+</html>

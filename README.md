@@ -1,4 +1,11 @@
-# Networking-And-Cybersecurity-Portfolio-Edgar-Maswaka-
-My Hands-on  Networking and Cybersecurity projects as a 2nd-year CS student in Zambia.
-University: Northrise University, Zambia 
-Focus: Computer Network, Operating systems, Cybersecurity, Firewalls , CTFs
+
+  # User Interface Design
+
+  This is a code bundle for User Interface Design. The original project is available at https://www.figma.com/design/slIWsBNoNgVbx5avbzMBf3/User-Interface-Design.
+
+  ## Running the code
+
+  Run `npm i` to install the dependencies.
+
+  Run `npm run dev` to start the development server.
+  
